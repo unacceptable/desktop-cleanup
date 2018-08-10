@@ -20,6 +20,12 @@ If you use this script for your macbook create a launchd:
     </dict>
 </plist>
 18:47 MacOS: ~/ >$
+
+Also ensure that the script has execute permissions:
+
+chmod u+x ~/Scripts/.bin/desktop_cleanup.py
+
+Log out and log back in for the changes to take effect.
 '''
 
 import sys
