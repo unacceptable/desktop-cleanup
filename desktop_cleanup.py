@@ -3,9 +3,10 @@
 # Email:      robert@scriptmyjob.com
 
 '''
-If you use this script for your macbook create a launchd:
+1.  If you use this script for your macbook create a launchd:
 
-18:47 MacOS: ~/ >$ cat ~/Library/LaunchAgents/com.scriptmyjob.desktop_cleanup.plist 
+```
+cat > ~/Library/LaunchAgents/com.scriptmyjob.desktop_cleanup.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 
@@ -14,18 +15,22 @@ If you use this script for your macbook create a launchd:
         <key>Label</key>
         <string>com.scriptmyjob.desktop_cleanup</string>
         <key>Program</key>
-        <string>/Users/robert/Scripts/.bin/desktop_cleanup.py</string>
+        <string>~/Scripts/.bin/desktop_cleanup.py</string>
         <key>RunAtLoad</key>
         <true/>
     </dict>
 </plist>
-18:47 MacOS: ~/ >$
-
-Also ensure that the script has execute permissions:
-
+EOF
+```
+2. Also ensure that the script has execute permissions:
+```
 chmod u+x ~/Scripts/.bin/desktop_cleanup.py
+```
+3.  Start the Daemon:
+```
+launchctl start com.scriptmyjob.desktop_cleanup
+```
 
-Log out and log back in for the changes to take effect.
 '''
 
 import sys
@@ -92,12 +97,21 @@ def get_pictures(directory, pattern):
 
 
 def archive_old_pictures(temp_dir, pattern):
-    old_pictures = get_pictures(temp_dir, pattern)[:-5]
-
+    pictures = get_pictures(temp_dir, pattern)
+    
+    old_pictures = [
+        os.path.split(o)[1] for o in sorted(
+            [
+                os.path.join(temp_dir, p) for p in pictures
+            ],
+            key=os.path.getmtime
+        )
+    ][:-5]
+    
     for op in old_pictures:
         dest = temp_dir.strip('Temp') + op.split(' ')[2]
         src  = temp_dir
-
+        
         move_items([op], src, dest)
 
 
