@@ -15,14 +15,14 @@ cat > ~/Library/LaunchAgents/com.scriptmyjob.desktop_cleanup.plist << EOF
         <key>Label</key>
         <string>com.scriptmyjob.desktop_cleanup</string>
         <key>Program</key>
-        <string>~/Scripts/.bin/desktop_cleanup.py</string>
+        <string>$HOME/Scripts/.bin/desktop_cleanup.py</string>
         <key>RunAtLoad</key>
         <true/>
     </dict>
 </plist>
 EOF
 ```
-2. Also ensure that the script has execute permissions:
+2. Also ensure that the script has execute permissions (after saving this script to the location below):
 ```
 chmod u+x ~/Scripts/.bin/desktop_cleanup.py
 ```
