@@ -1,104 +1,71 @@
 #!/usr/bin/env python
-# Written by: Robert J.
-# Email:      robert@scriptmyjob.com
-
 '''
-1.  If you use this script for your macbook create a launchd:
-
-```
-cat > ~/Library/LaunchAgents/com.scriptmyjob.desktop_cleanup.plist << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-
-<plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>com.scriptmyjob.desktop_cleanup</string>
-        <key>Program</key>
-        <string>$HOME/Scripts/.bin/desktop_cleanup.py</string>
-        <key>RunAtLoad</key>
-        <true/>
-    </dict>
-</plist>
-EOF
-```
-2. Also ensure that the script has execute permissions (after saving this script to the location below):
-```
-chmod u+x ~/Scripts/.bin/desktop_cleanup.py
-```
-3.  Start the Daemon:
-```
-launchctl start com.scriptmyjob.desktop_cleanup
-```
-
+A simple daemon to clean up desktop screenshots by moving them to a temporary
 '''
 
-import sys
 import os
 import re
 import logging
+
 from time import sleep
 
 logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s'
 )
 
-logger = logging.getLogger()
-
-#######################################
-### Main Function #####################
-#######################################
-
 def main():
+    '''
+    Main function to orchestrate the desktop cleanup process.
+    '''
     home_dir    = os.environ['HOME']
     desktop     = os.path.join(home_dir, 'Desktop')
-    temp_dir    = os.path.join(home_dir, 'Pictures/Temp') 
-    pattern     = 'Screen.*\.png'
+    temp_dir    = os.path.join(home_dir, 'Pictures/Temp')
+    pattern     = r'Screen.*\.png'
     pictures    = get_pictures(desktop, pattern)
-    
+
     if pictures:
         move_items(pictures, desktop, temp_dir)
         archive_old_pictures(temp_dir, pattern)
 
 
-#######################################
-### Generic Functions #################
-#######################################
-
 def move_items(items, source, destination):
+    '''
+    Move specified items from source to destination directory.
+    Create destination directory if it does not exist.
+    '''
     if not os.path.isdir(destination):
-        logger.info('Creating directory: "{0}"'.format(destination))
+        logging.info('Creating directory: %s', destination)
         os.makedirs(destination)
 
     for i in items:
         source_file = os.path.join(source, i)
         dest_file   = os.path.join(destination, i)
 
-        logger.info('Moving "{0}" to "{1}"'.format(source_file, dest_file))
+        logging.info('Moving "%s" to "%s"', source_file, dest_file)
         os.rename(source_file, dest_file)
 
 
-#######################################
-### Program Specific Functions ########
-#######################################
-
 def get_pictures(directory, pattern):
+    '''
+    Get a list of picture files in the specified directory matching the given pattern.
+    '''
     pictures = [
         p for p in os.listdir(directory) if re.match(pattern, p)
     ]
-    
+
     if pictures:
-        logger.info('Found items to move: ' + str(pictures))
-    else:
-        return
+        logging.info('Found items to move: %s', pictures)
 
     return pictures
 
 
 def archive_old_pictures(temp_dir, pattern):
+    '''
+    Archive old pictures in the temporary directory, keeping only the 5 most recent ones.
+    '''
     pictures = get_pictures(temp_dir, pattern)
-    
+
     old_pictures = [
         os.path.split(o)[1] for o in sorted(
             [
@@ -107,27 +74,22 @@ def archive_old_pictures(temp_dir, pattern):
             key=os.path.getmtime
         )
     ][:-5]
-    
+
     for op in old_pictures:
-        dest = temp_dir.strip('Temp') + op.split(' ')[2]
+        dest = temp_dir.strip('Temp') + op.split(' ')[1]
         src  = temp_dir
-        
+
         move_items([op], src, dest)
 
 
-#######################################
-### Execution #########################
-#######################################
-
 if __name__ == "__main__":
-    logger.info('Starting Desktop Cleanup Daemon.')
+    logging.info('Starting Desktop Cleanup Daemon.')
 
     while True:
         try:
             main()
             sleep(1)
-        except KeyboardInterrupt, e:
+        except KeyboardInterrupt as e:
             print('\n')
             logging.info("Stopping Desktop Cleanup Deamon per user input.")
             break
-
